@@ -3,12 +3,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.fntsoftware</groupId>
-        <artifactId>solr-parent</artifactId>
+        <groupId>se.simonsoft</groupId>
+        <artifactId>quarkus-solr-extension-parent</artifactId>
         <version>1.0.0</version>
     </parent>
-    <artifactId>solr-deployment</artifactId>
-    <name>Solrer - Deployment</name>
+    <artifactId>quarkus-solr-extension-deployment</artifactId>
+    <name>Simonsoft Quarkus Solr Extension - Deployment</name>
 
     <dependencies>
         <dependency>
@@ -16,8 +16,12 @@
             <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.fntsoftware</groupId>
-            <artifactId>solr</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-context-propagation-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>se.simonsoft</groupId>
+            <artifactId>quarkus-solr-extension</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
