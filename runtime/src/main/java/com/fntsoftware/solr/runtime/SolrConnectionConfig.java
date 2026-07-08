@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface SolrConnectionConfig {
     /**
      * Whether the SolrJ client should be available for injection.
+     * TODO This config mapping entry is only used to avoid Quarkus warnings when consumers set the lookup property.
      *
      * @return
      */
