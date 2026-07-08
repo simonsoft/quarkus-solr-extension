@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.fntsoftware</groupId>
-    <artifactId>solr-parent</artifactId>
+    <groupId>se.simonsoft</groupId>
+    <artifactId>quarkus-solr-extension-parent</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
-    <name>Solrer - Parent</name>
+    <name>Simonsoft Quarkus Solr Extension - Parent</name>
 
+    <!--
     <distributionManagement>
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/fntsoftware/quarkus-solr-extension</url>
+            <url>https://maven.pkg.github.com/simonsoft/quarkus-solr-extension</url>
         </repository>
     </distributionManagement>
+    -->
 
     <modules>
         <module>deployment</module>
