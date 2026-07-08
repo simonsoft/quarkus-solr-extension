@@ -22,7 +22,7 @@ public class SolrClientProducer {
 
     @Produces
     @ApplicationScoped
-    @LookupUnlessProperty(name = "quarkus.solr.enabled", stringValue = "false", lookupIfMissing = true)
+    @LookupUnlessProperty(name = "quarkus.solr.enabled", stringValue = "false")
     public SolrClient getClient() throws SolrServerException, IOException {
         HttpJdkSolrClient.Builder builder = new HttpJdkSolrClient.Builder(config.url())
                 .withExecutor(executor)
