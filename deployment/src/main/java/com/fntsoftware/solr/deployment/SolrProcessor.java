@@ -1,6 +1,7 @@
 package com.fntsoftware.solr.deployment;
 
 import com.fntsoftware.solr.runtime.SolrClientProducer;
+import com.fntsoftware.solr.runtime.SolrClientRegistry;
 import com.fntsoftware.solr.runtime.SolrDevserviceConfig;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.IsNormal;
@@ -27,6 +28,7 @@ class SolrProcessor {
     public AdditionalBeanBuildItem producer() {
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(SolrClientProducer.class)
+                .addBeanClass(SolrClientRegistry.class)
                 .setUnremovable()
                 .build();
     }
