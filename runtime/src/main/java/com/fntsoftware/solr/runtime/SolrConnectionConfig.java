@@ -25,7 +25,7 @@ public interface SolrConnectionConfig {
      *
      * @return
      */
-    String url();
+    Optional<String> url();
 
     /**
      * Whether the SolrJ client should follow redirects or not

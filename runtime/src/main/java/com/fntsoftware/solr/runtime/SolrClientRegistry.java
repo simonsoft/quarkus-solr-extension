@@ -26,7 +26,8 @@ public class SolrClientRegistry {
     private final Map<String, SolrClient> clients = new HashMap<>();
 
     public synchronized SolrClient defaultClient() throws SolrServerException, IOException {
-        return client(DEFAULT_CLIENT, config.url());
+        return client(DEFAULT_CLIENT, config.url().orElseThrow(
+                () -> new IllegalStateException("quarkus.solr.url is required for the default Solr client")));
     }
 
     public synchronized SolrClient namedClient(String name) throws SolrServerException, IOException {
@@ -35,6 +36,14 @@ public class SolrClientRegistry {
             throw new IllegalArgumentException("No Solr client configured with name '" + name + "'");
         }
         return client(name, clientConfig.url());
+    }
+
+    public SolrClient namedClientForBean(String name) {
+        try {
+            return namedClient(name);
+        } catch (SolrServerException | IOException e) {
+            throw new IllegalStateException("Failed to create Solr client '" + name + "'", e);
+        }
     }
 
     private SolrClient client(String name, String url) throws SolrServerException, IOException {

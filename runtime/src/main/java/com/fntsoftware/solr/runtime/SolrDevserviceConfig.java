@@ -6,6 +6,7 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
 import java.util.Map;
+import java.util.Optional;
 
 @ConfigMapping(prefix = "quarkus.solr.devservices")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
@@ -23,7 +24,7 @@ public interface SolrDevserviceConfig {
      *
      * @return
      */
-    String core();
+    Optional<String> core();
 
     /**
      * Which Solr version to use
