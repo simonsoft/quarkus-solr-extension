@@ -11,6 +11,6 @@ public class NamedSolrClientCreator implements BeanCreator<SolrClient> {
     @Override
     public SolrClient create(SyntheticCreationalContext<SolrClient> context) {
         String name = (String) context.getParams().get(NAME_PARAM);
-        return context.getInjectedReference(SolrClientRegistry.class).namedClientForBean(name);
+        return context.getInjectedReference(SolrClientProducer.class).namedClientForBean(name);
     }
 }

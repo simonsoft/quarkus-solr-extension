@@ -1,7 +1,6 @@
 package com.fntsoftware.solr.deployment;
 
 import com.fntsoftware.solr.runtime.SolrClientProducer;
-import com.fntsoftware.solr.runtime.SolrClientRegistry;
 import com.fntsoftware.solr.runtime.SolrDevserviceConfig;
 import com.fntsoftware.solr.runtime.NamedSolrClientCreator;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -41,14 +40,13 @@ class SolrProcessor {
     private static final String CLIENT_URL_SUFFIX = ".url";
     private static final String DEV_SERVICE_CORE_PREFIX = "quarkus.solr.devservices.cores.";
     private static final String DEV_SERVICE_CORE_CONFIG_PATH_SUFFIX = ".config-path";
-    private static final Type SOLR_CLIENT_REGISTRY_TYPE =
-            Type.create(DotName.createSimple(SolrClientRegistry.class.getName()), Type.Kind.CLASS);
+    private static final Type SOLR_CLIENT_PRODUCER_TYPE =
+            Type.create(DotName.createSimple(SolrClientProducer.class.getName()), Type.Kind.CLASS);
 
     @BuildStep
     public AdditionalBeanBuildItem producer() {
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(SolrClientProducer.class)
-                .addBeanClass(SolrClientRegistry.class)
                 .setUnremovable()
                 .build();
     }
@@ -63,7 +61,7 @@ class SolrProcessor {
                     .scope(Singleton.class)
                     .named(name)
                     .unremovable()
-                    .addInjectionPoint(SOLR_CLIENT_REGISTRY_TYPE)
+                    .addInjectionPoint(SOLR_CLIENT_PRODUCER_TYPE)
                     .creator(NamedSolrClientCreator.class)
                     .param(NamedSolrClientCreator.NAME_PARAM, name)
                     .done());
