@@ -5,6 +5,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
+import java.util.Map;
 import java.util.Optional;
 
 @ConfigMapping(prefix = "quarkus.solr")
@@ -24,7 +25,7 @@ public interface SolrConnectionConfig {
      *
      * @return
      */
-    String url();
+    Optional<String> url();
 
     /**
      * Whether the SolrJ client should follow redirects or not
@@ -79,6 +80,22 @@ public interface SolrConnectionConfig {
      * @return
      */
     Optional<String> defaultCollection();
+
+    /**
+     * Named Solr clients for multi-core applications.
+     *
+     * @return the client configurations keyed by CDI name/core identifier
+     */
+    Map<String, ClientConfig> clients();
+
+    interface ClientConfig {
+        /**
+         * The URL to the Solr core.
+         *
+         * @return
+         */
+        String url();
+    }
 
     interface BasicAuthConfig {
         /**

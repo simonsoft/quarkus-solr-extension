@@ -27,7 +27,18 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
-            <version>1.20.0</version>
+            <version>2.0.4</version>
+        </dependency>
+        <!-- Keep docker-java aligned with Testcontainers 2.x; Quarkus 3.12 otherwise resolves an older Docker client. -->
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-api</artifactId>
+            <version>3.7.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport-zerodep</artifactId>
+            <version>3.7.1</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

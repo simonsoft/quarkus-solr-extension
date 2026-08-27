@@ -6,29 +6,48 @@ Solr container.
 
 ## Configuration
 
-The devservice is enabled by default in development mode. However, the name of the core the service should create in the
-Solr instance needs to be set and the Solr version can be configured in your `application.properties`:
+The extension is opt-in. Enable it in `application.properties` when the application should inject Solr clients:
 
 ```properties
-# enabled by default
+quarkus.solr.enabled=true
+```
+
+For a single-core Dev Service, set the core name. The extension expects the Solr core config in the `solr` directory on
+the application classpath:
+
+```properties
 quarkus.solr.devservices.enabled=true
-# required
 quarkus.solr.devservices.core=<your core name>
-# default version is the latest stable one
 quarkus.solr.devservices.version=9.6.1
 ```
 
-Also, the extension expects the configuration for the Solr core in the `solr` directory in the resources of your
-project.
+For multi-core Dev Services, configure one classpath config directory per core:
+
+```properties
+quarkus.solr.devservices.cores.repositem.config-path=se/repos/indexing/solr/repositem
+quarkus.solr.devservices.cores.reposxml.config-path=se/simonsoft/cms/indexing/xml/solr/reposxml
+```
+
+Each configured core can then be injected as a named client:
+
+```java
+@Inject
+@Named("repositem")
+SolrClient repositem;
+
+@Inject
+@Named("reposxml")
+SolrClient reposxml;
+```
 
 ### Prod
 
 For production usage the configurations above do not matter. Only the URL of the Solr instance to connect to needs to be
-provided. Optionally the SolrClient can be disabled (it's enabled by default):
+provided:
 
 ```properties
+quarkus.solr.enabled=true
 quarkus.solr.url=https://mydomain.fun/solr/mycore
-quarkus.solr.enabled=false
 quarkus.solr.request-timeout=0
 quarkus.solr.idle-timeout=60000
 quarkus.solr.connection-timeout=60000
@@ -41,6 +60,14 @@ quarkus.solr.use-http1-1=false
 
 > In development mode this URL configuration is done automatically and filled with the host, port and core name of the
 > devservice container
+
+For multiple external cores, configure named clients directly:
+
+```properties
+quarkus.solr.enabled=true
+quarkus.solr.clients.repositem.url=https://mydomain.fun/solr/repositem
+quarkus.solr.clients.reposxml.url=https://mydomain.fun/solr/reposxml
+```
 
 ## Usage
 

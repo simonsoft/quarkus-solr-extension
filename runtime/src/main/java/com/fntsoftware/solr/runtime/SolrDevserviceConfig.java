@@ -5,6 +5,9 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
+import java.util.Map;
+import java.util.Optional;
+
 @ConfigMapping(prefix = "quarkus.solr.devservices")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public interface SolrDevserviceConfig {
@@ -21,7 +24,7 @@ public interface SolrDevserviceConfig {
      *
      * @return
      */
-    String core();
+    Optional<String> core();
 
     /**
      * Which Solr version to use
@@ -30,4 +33,20 @@ public interface SolrDevserviceConfig {
      */
     @WithDefault("9.6.1")
     String version();
+
+    /**
+     * Named Solr cores for multi-core dev services.
+     *
+     * @return the core configurations keyed by core name
+     */
+    Map<String, CoreConfig> cores();
+
+    interface CoreConfig {
+        /**
+         * Classpath path to the Solr core config directory.
+         *
+         * @return
+         */
+        String configPath();
+    }
 }
