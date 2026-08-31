@@ -8,8 +8,8 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.runtime.LaunchMode;
 import jakarta.inject.Singleton;
 import org.apache.solr.client.solrj.SolrClient;
@@ -23,7 +23,6 @@ import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.images.builder.dockerfile.statement.MultiArgsStatement;
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -33,7 +32,6 @@ import java.util.function.BooleanSupplier;
 
 class SolrProcessor {
     SolrDevserviceConfig config;
-    static volatile DevServicesResultBuildItem.RunningDevService devService;
 
     private static final String FEATURE = "solr";
     private static final String CLIENT_PREFIX = "quarkus.solr.clients.";
@@ -69,22 +67,7 @@ class SolrProcessor {
     }
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = WantsSolrDevService.class)
-    public DevServicesResultBuildItem createContainer(CuratedApplicationShutdownBuildItem closeBuildItem) {
-        if (devService != null) {
-            return null;
-        }
-        Runnable closeTask = () -> {
-            if (devService != null) {
-                try {
-                    devService.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            devService = null;
-        };
-        closeBuildItem.addCloseTask(closeTask, false);
-
+    public DevServicesResultBuildItem createContainer() {
         Map<String, SolrDevserviceConfig.CoreConfig> cores = new TreeMap<>(config.cores());
         if (!cores.isEmpty()) {
             return createMultiCoreContainer(cores);
@@ -100,13 +83,14 @@ class SolrProcessor {
                     builder.from("solr:" + config.version()).withStatement(
                             new MultiArgsStatement("COPY --chown=solr:solr", ".", "/var/solr/data/" + core));
                 });
-        SolrContainer container = new SolrContainer(image, Set.of(core));
-        container.start();
-        Map<String, String> props = Map.of("quarkus.solr.url", "http://" + container.getHost() + ":"
-                + container.getMappedPort(container.getPort()) + "/solr/" + core);
-        devService = new DevServicesResultBuildItem.RunningDevService(FEATURE, container.getContainerId(),
-                container::close, props);
-        return devService.toBuildItem();
+        return DevServicesResultBuildItem.owned()
+                .feature(FEATURE)
+                .description("Solr Dev Service")
+                .serviceConfig(config)
+                .startable(() -> new SolrContainer(image, Set.of(core)))
+                .highPriorityConfig(Set.of("quarkus.solr.url"))
+                .configProvider(Map.of("quarkus.solr.url", container -> solrCoreUrl(container, core)))
+                .build();
     }
 
     private DevServicesResultBuildItem createMultiCoreContainer(Map<String, SolrDevserviceConfig.CoreConfig> cores) {
@@ -122,15 +106,18 @@ class SolrProcessor {
             }
         });
 
-        SolrContainer container = new SolrContainer(image, cores.keySet());
-        container.start();
-        Map<String, String> props = new LinkedHashMap<>();
+        Map<String, java.util.function.Function<SolrContainer, String>> props = new LinkedHashMap<>();
         for (String core : cores.keySet()) {
-            props.put(CLIENT_PREFIX + core + CLIENT_URL_SUFFIX, solrCoreUrl(container, core));
+            props.put(CLIENT_PREFIX + core + CLIENT_URL_SUFFIX, container -> solrCoreUrl(container, core));
         }
-        devService = new DevServicesResultBuildItem.RunningDevService(FEATURE, container.getContainerId(),
-                container::close, props);
-        return devService.toBuildItem();
+        return DevServicesResultBuildItem.owned()
+                .feature(FEATURE)
+                .description("Solr Dev Service")
+                .serviceConfig(config)
+                .startable(() -> new SolrContainer(image, cores.keySet()))
+                .highPriorityConfig(Set.copyOf(props.keySet()))
+                .configProvider(props)
+                .build();
     }
 
     static class WantsSolrDevService implements BooleanSupplier {
@@ -144,7 +131,7 @@ class SolrProcessor {
         }
     }
 
-    private static class SolrContainer extends GenericContainer<SolrContainer> {
+    private static class SolrContainer extends GenericContainer<SolrContainer> implements Startable {
         static final int PORT = 8983;
         private final Set<String> cores;
 
@@ -155,6 +142,16 @@ class SolrProcessor {
 
         public int getPort() {
             return PORT;
+        }
+
+        @Override
+        public String getConnectionInfo() {
+            return "http://" + getHost() + ":" + getMappedPort(PORT) + "/solr";
+        }
+
+        @Override
+        public void close() {
+            stop();
         }
 
         @Override
