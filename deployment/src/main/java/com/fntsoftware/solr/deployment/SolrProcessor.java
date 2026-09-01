@@ -15,6 +15,7 @@ import jakarta.inject.Singleton;
 import org.apache.solr.client.solrj.SolrClient;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.ConfigValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 import org.testcontainers.containers.GenericContainer;
@@ -88,10 +89,6 @@ class SolrProcessor {
                 .description("Solr Dev Service")
                 .serviceConfig(config)
                 .startable(() -> new SolrContainer(image, Set.of(core)))
-                // TODO Replace highPriorityConfig when Quarkus finalizes its Dev Services config API (#51209).
-                // It makes the generated URL override an explicitly configured URL while Dev Services are enabled.
-                // Consumers using external Solr in dev/test must set quarkus.solr.devservices.enabled=false.
-                .highPriorityConfig(Set.of("quarkus.solr.url"))
                 .configProvider(Map.of("quarkus.solr.url", container -> solrCoreUrl(container, core)))
                 .build();
     }
@@ -118,8 +115,6 @@ class SolrProcessor {
                 .description("Solr Dev Service")
                 .serviceConfig(config)
                 .startable(() -> new SolrContainer(image, cores.keySet()))
-                // See the single-core highPriorityConfig comment above for precedence and migration details.
-                .highPriorityConfig(Set.copyOf(props.keySet()))
                 .configProvider(props)
                 .build();
     }
@@ -131,7 +126,27 @@ class SolrProcessor {
         public boolean getAsBoolean() {
             Boolean devServicesActive = ConfigProvider.getConfig().getValue("quarkus.devservices.enabled",
                     Boolean.class);
-            return launchMode.isDevOrTest() && solrEnabled() && devServicesActive && config.enabled();
+            return launchMode.isDevOrTest() && solrEnabled() && devServicesActive && config.enabled()
+                    && needsDevService();
+        }
+
+        private boolean needsDevService() {
+            if (!config.cores().isEmpty()) {
+                // One missing URL starts the shared container with all configured Dev Service cores.
+                // Cores with explicit URLs still use those URLs; creating their local counterparts is harmless.
+                return config.cores().keySet().stream()
+                        .anyMatch(core -> !isExplicitlyConfigured(CLIENT_PREFIX + core + CLIENT_URL_SUFFIX));
+            }
+            return config.core().isPresent() && !isExplicitlyConfigured("quarkus.solr.url");
+        }
+
+        private boolean isExplicitlyConfigured(String property) {
+            ConfigValue value = ConfigProvider.getConfig().getConfigValue(property);
+            // Quarkus can retain a generated URL here while switching test profiles. It must not be
+            // mistaken for user configuration, or the managed service will not be restarted.
+            // TODO Revisit this source-name check when upgrading the Quarkus Dev Services config API.
+            return value.getValue() != null && !value.getValue().isEmpty()
+                    && !"DevServicesConfigSource".equals(value.getSourceName());
         }
     }
 
