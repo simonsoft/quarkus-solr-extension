@@ -88,6 +88,9 @@ class SolrProcessor {
                 .description("Solr Dev Service")
                 .serviceConfig(config)
                 .startable(() -> new SolrContainer(image, Set.of(core)))
+                // TODO Replace highPriorityConfig when Quarkus finalizes its Dev Services config API (#51209).
+                // It makes the generated URL override an explicitly configured URL while Dev Services are enabled.
+                // Consumers using external Solr in dev/test must set quarkus.solr.devservices.enabled=false.
                 .highPriorityConfig(Set.of("quarkus.solr.url"))
                 .configProvider(Map.of("quarkus.solr.url", container -> solrCoreUrl(container, core)))
                 .build();
@@ -115,6 +118,7 @@ class SolrProcessor {
                 .description("Solr Dev Service")
                 .serviceConfig(config)
                 .startable(() -> new SolrContainer(image, cores.keySet()))
+                // See the single-core highPriorityConfig comment above for precedence and migration details.
                 .highPriorityConfig(Set.copyOf(props.keySet()))
                 .configProvider(props)
                 .build();
