@@ -4,6 +4,10 @@ Quarkus extension with a provider for
 the [Solrj](https://solr.apache.org/guide/solr/latest/deployment-guide/solrj.html) `SolrClient` and a devservice for the
 Solr container.
 
+Use Quarkus 3.39.2 for this extension and its consuming applications. It includes
+[the Dev Services configuration isolation fix](https://github.com/quarkusio/quarkus/pull/53794) for test profile changes.
+Generated Solr URLs use the standard `configProvider` API.
+
 ## Configuration
 
 The extension is opt-in. Enable it in `application.properties` when the application should inject Solr clients:
@@ -68,6 +72,10 @@ quarkus.solr.enabled=true
 quarkus.solr.clients.repositem.url=https://mydomain.fun/solr/repositem
 quarkus.solr.clients.reposxml.url=https://mydomain.fun/solr/reposxml
 ```
+
+URLs in `application.properties` take precedence over generated Dev Service URLs. If every configured core has an
+explicit URL, no Solr Dev Service starts. With a mix of external and local cores, the shared container starts and
+configured clients retain their external URLs.
 
 ## Usage
 
