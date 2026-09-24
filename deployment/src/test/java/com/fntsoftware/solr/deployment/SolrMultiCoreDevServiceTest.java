@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 class SolrMultiCoreDevServiceTest {
 
-    private static final String SOLRCONFIG = """
+    static final String SOLRCONFIG = """
             <config>
               <luceneMatchVersion>9.6.1</luceneMatchVersion>
               <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
@@ -29,7 +29,7 @@ class SolrMultiCoreDevServiceTest {
             </config>
             """;
 
-    private static final String SCHEMA = """
+    static final String SCHEMA = """
             <schema name="test" version="1.6">
               <fieldType name="string" class="solr.StrField"/>
               <field name="id" type="string" indexed="true" stored="true" required="true"/>
