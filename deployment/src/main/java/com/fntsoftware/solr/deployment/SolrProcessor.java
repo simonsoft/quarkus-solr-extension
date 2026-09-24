@@ -79,7 +79,7 @@ class SolrProcessor {
     private DevServicesResultBuildItem createSingleCoreContainer() {
         String core = config.core().orElseThrow(
                 () -> new IllegalStateException("quarkus.solr.devservices.core is required for single-core Solr Dev Service"));
-        ImageFromDockerfile image = new ImageFromDockerfile("quarkus/devservices/solr")
+        ImageFromDockerfile image = new ImageFromDockerfile()
                 .withFileFromClasspath(".", "solr").withDockerfileFromBuilder(builder -> {
                     builder.from("solr:" + config.version()).withStatement(
                             new MultiArgsStatement("COPY --chown=solr:solr", ".", "/var/solr/data/" + core));
@@ -94,7 +94,7 @@ class SolrProcessor {
     }
 
     private DevServicesResultBuildItem createMultiCoreContainer(Map<String, SolrDevserviceConfig.CoreConfig> cores) {
-        ImageFromDockerfile image = new ImageFromDockerfile("quarkus/devservices/solr");
+        ImageFromDockerfile image = new ImageFromDockerfile();
         for (Map.Entry<String, SolrDevserviceConfig.CoreConfig> core : cores.entrySet()) {
             image.withFileFromClasspath(core.getKey(), core.getValue().configPath());
         }
