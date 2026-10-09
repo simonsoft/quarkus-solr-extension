@@ -8,6 +8,7 @@ import jakarta.inject.Inject;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpJdkSolrClient;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.context.ManagedExecutor;
 
 import java.io.IOException;
@@ -18,6 +19,9 @@ import java.util.concurrent.TimeUnit;
 @ApplicationScoped
 public class SolrClientProducer {
     private static final String DEFAULT_CLIENT = "default";
+    private static final String DEFAULT_URL_PROPERTY = "quarkus.solr.url";
+    private static final String CLIENT_PREFIX = "quarkus.solr.clients.";
+    private static final String CLIENT_URL_SUFFIX = ".url";
 
     @Inject
     SolrConnectionConfig config;
@@ -31,20 +35,22 @@ public class SolrClientProducer {
     @ApplicationScoped
     @LookupUnlessProperty(name = "quarkus.solr.enabled", stringValue = "false")
     public SolrClient getClient() throws SolrServerException, IOException {
-        return client(DEFAULT_CLIENT, config.url().orElseThrow(
-                () -> new IllegalStateException("quarkus.solr.url is required for the default Solr client")));
+        return client(DEFAULT_CLIENT, configuredUrl(DEFAULT_URL_PROPERTY));
     }
 
     SolrClient namedClientForBean(String name) {
-        SolrConnectionConfig.ClientConfig clientConfig = config.clients().get(name);
-        if (clientConfig == null) {
-            throw new IllegalArgumentException("No Solr client configured with name '" + name + "'");
-        }
         try {
-            return client(name, clientConfig.url());
+            return client(name, configuredUrl(CLIENT_PREFIX + name + CLIENT_URL_SUFFIX));
         } catch (SolrServerException | IOException e) {
             throw new IllegalStateException("Failed to create Solr client '" + name + "'", e);
         }
+    }
+
+    private String configuredUrl(String property) {
+        // The runtime config mapping can be initialized before a managed Dev Service publishes its URL.
+        // Resolve only the URL late; the remaining stable client settings stay type-safe in the mapping.
+        return ConfigProvider.getConfig().getOptionalValue(property, String.class)
+                .orElseThrow(() -> new IllegalStateException(property + " is required for the Solr client"));
     }
 
     private synchronized SolrClient client(String name, String url) throws SolrServerException, IOException {
