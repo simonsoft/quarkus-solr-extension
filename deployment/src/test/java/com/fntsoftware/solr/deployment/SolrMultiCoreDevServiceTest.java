@@ -5,7 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import io.quarkus.test.QuarkusUnitTest;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.common.SolrInputDocument;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -20,6 +22,7 @@ class SolrMultiCoreDevServiceTest {
               <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
               <schemaFactory class="ClassicIndexSchemaFactory"/>
               <updateHandler class="solr.DirectUpdateHandler2"/>
+              <requestHandler name="/update" class="solr.UpdateRequestHandler"/>
               <requestHandler name="/select" class="solr.SearchHandler"/>
               <requestHandler name="/admin/ping" class="solr.PingRequestHandler">
                 <lst name="invariants">
@@ -68,5 +71,22 @@ class SolrMultiCoreDevServiceTest {
     void shouldStartSolrWithMultipleCores() throws Exception {
         assertEquals(0, repositem.ping().getStatus());
         assertEquals(0, reposxml.ping().getStatus());
+
+        SolrInputDocument item = new SolrInputDocument();
+        item.addField("id", "item");
+        repositem.add(item);
+        repositem.commit();
+        SolrInputDocument xml = new SolrInputDocument();
+        xml.addField("id", "xml");
+        reposxml.add(xml);
+        reposxml.commit();
+
+        // Both cores must be writable and keep their data separate after copying the configuration.
+        var items = repositem.query(new SolrQuery("*:*")).getResults();
+        var elements = reposxml.query(new SolrQuery("*:*")).getResults();
+        assertEquals(1, items.getNumFound());
+        assertEquals(1, elements.getNumFound());
+        assertEquals("item", items.get(0).getFieldValue("id"));
+        assertEquals("xml", elements.get(0).getFieldValue("id"));
     }
 }

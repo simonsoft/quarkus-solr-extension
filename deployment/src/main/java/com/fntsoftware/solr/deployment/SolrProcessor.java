@@ -22,8 +22,9 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.containers.wait.strategy.WaitStrategy;
-import org.testcontainers.images.builder.ImageFromDockerfile;
-import org.testcontainers.images.builder.dockerfile.statement.MultiArgsStatement;
+import org.testcontainers.images.builder.Transferable;
+import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -79,32 +80,20 @@ class SolrProcessor {
     private DevServicesResultBuildItem createSingleCoreContainer() {
         String core = config.core().orElseThrow(
                 () -> new IllegalStateException("quarkus.solr.devservices.core is required for single-core Solr Dev Service"));
-        ImageFromDockerfile image = new ImageFromDockerfile()
-                .withFileFromClasspath(".", "solr").withDockerfileFromBuilder(builder -> {
-                    builder.from("solr:" + config.version()).withStatement(
-                            new MultiArgsStatement("COPY --chown=solr:solr", ".", "/var/solr/data/" + core));
-                });
         return DevServicesResultBuildItem.owned()
                 .feature(FEATURE)
                 .description("Solr Dev Service")
                 .serviceConfig(config)
-                .startable(() -> new SolrContainer(image, Set.of(core)))
+                .startable(() -> new SolrContainer(config.version(), Map.of(core, "solr")))
                 .configProvider(Map.of("quarkus.solr.url", container -> solrCoreUrl(container, core)))
                 .build();
     }
 
     private DevServicesResultBuildItem createMultiCoreContainer(Map<String, SolrDevserviceConfig.CoreConfig> cores) {
-        ImageFromDockerfile image = new ImageFromDockerfile();
+        Map<String, String> corePaths = new TreeMap<>();
         for (Map.Entry<String, SolrDevserviceConfig.CoreConfig> core : cores.entrySet()) {
-            image.withFileFromClasspath(core.getKey(), core.getValue().configPath());
+            corePaths.put(core.getKey(), core.getValue().configPath());
         }
-        image.withDockerfileFromBuilder(builder -> {
-            builder.from("solr:" + config.version());
-            for (String core : cores.keySet()) {
-                builder.withStatement(new MultiArgsStatement(
-                        "COPY --chown=solr:solr", core, "/var/solr/data/" + core));
-            }
-        });
 
         Map<String, java.util.function.Function<SolrContainer, String>> props = new LinkedHashMap<>();
         for (String core : cores.keySet()) {
@@ -114,7 +103,7 @@ class SolrProcessor {
                 .feature(FEATURE)
                 .description("Solr Dev Service")
                 .serviceConfig(config)
-                .startable(() -> new SolrContainer(image, cores.keySet()))
+                .startable(() -> new SolrContainer(config.version(), corePaths))
                 .configProvider(props)
                 .build();
     }
@@ -154,9 +143,15 @@ class SolrProcessor {
         static final int PORT = 8983;
         private final Set<String> cores;
 
-        public SolrContainer(ImageFromDockerfile image, Set<String> cores) {
-            super(image);
-            this.cores = Set.copyOf(cores);
+        public SolrContainer(String version, Map<String, String> corePaths) {
+            super(DockerImageName.parse("solr:" + version));
+            this.cores = Set.copyOf(corePaths.keySet());
+            corePaths.forEach((core, path) -> withCopyFileToContainer(
+                    MountableFile.forClasspathResource(path), "/tmp/quarkus-solr/" + core));
+            // Solr's init hook copies the complete cores as the solr user, preserving writable ownership.
+            // No derived image is needed, so cleanup cannot remove layers used by another test's build.
+            withCopyToContainer(Transferable.of("cp -R /tmp/quarkus-solr/. /var/solr/data/\n"),
+                    "/docker-entrypoint-initdb.d/init-quarkus-solr.sh");
         }
 
         public int getPort() {
