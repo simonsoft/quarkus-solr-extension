@@ -14,6 +14,15 @@
     <packaging>pom</packaging>
     <name>Simonsoft Quarkus Solr Extension - Parent</name>
 
+    <!-- Where to find the parent itself: its own repositories apply only once it is resolved. -->
+    <repositories>
+        <repository>
+            <id>repos.open.repo</id>
+            <name>Simonsoft / Repos Open Repository</name>
+            <url>https://opensource.simonsoft.se/maven/</url>
+        </repository>
+    </repositories>
+
     <modules>
         <module>deployment</module>
         <module>runtime</module>
