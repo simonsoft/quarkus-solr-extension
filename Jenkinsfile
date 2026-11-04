@@ -38,8 +38,14 @@ pipeline {
         timestamps()
     }
 
+    environment {
+        // Jenkins tool installations (Manage Jenkins -> Tools), used by every withMaven.
+        MAVEN_TOOL = 'maven-3.9'
+        JDK_TOOL = 'jdk-21'
+    }
+
     // Values derived in "Determine version" are set on env from the script block.
-    // Do not declare them in an environment {} directive: declarative environment
+    // Do not declare them in the environment {} directive: declarative environment
     // values cannot be overwritten from script, so they would stay empty.
 
     stages {
@@ -105,7 +111,7 @@ pipeline {
 
         stage('Verify') {
             steps {
-                withMaven(maven: 'maven-3.9', jdk: 'jdk-21', traceability: true) {
+                withMaven(maven: env.MAVEN_TOOL, jdk: env.JDK_TOOL, traceability: true) {
                     sh 'mvn ${MAVEN_REVISION_ARG} clean verify'
                 }
             }
@@ -116,7 +122,7 @@ pipeline {
                 expression { env.BUILD_KIND != 'branch' }
             }
             steps {
-                withMaven(maven: 'maven-3.9', jdk: 'jdk-21', traceability: true) {
+                withMaven(maven: env.MAVEN_TOOL, jdk: env.JDK_TOOL, traceability: true) {
                     // Verify has already run. Maven still executes the lifecycle needed
                     // for deploy, but tests are not run a second time.
                     sh 'mvn ${MAVEN_REVISION_ARG} -DskipTests deploy'
