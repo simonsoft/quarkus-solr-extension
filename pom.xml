@@ -1,21 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>se.simonsoft</groupId>
+    <!-- Build conventions, flatten and the S3 deploy target (opensource.simonsoft.se/maven). -->
+    <parent>
+        <groupId>se.simonsoft</groupId>
+        <artifactId>cms-maven-parent</artifactId>
+        <version>21.0-SNAPSHOT</version>
+        <relativePath/>
+    </parent>
     <artifactId>quarkus-solr-extension-parent</artifactId>
-    <version>1.0.0</version>
+    <!-- CI-friendly: Jenkins sets -Drevision for PR and release builds (simonsoft-agents/docs/maven-versioning.md). -->
+    <version>${revision}</version>
     <packaging>pom</packaging>
     <name>Simonsoft Quarkus Solr Extension - Parent</name>
 
-    <!--
-    <distributionManagement>
+    <!-- Where to find the parent itself: its own repositories apply only once it is resolved. -->
+    <repositories>
         <repository>
-            <id>github</id>
-            <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/simonsoft/quarkus-solr-extension</url>
+            <id>repos.open.repo</id>
+            <name>Simonsoft / Repos Open Repository</name>
+            <url>https://opensource.simonsoft.se/maven/</url>
         </repository>
-    </distributionManagement>
-    -->
+    </repositories>
 
     <modules>
         <module>deployment</module>
@@ -23,9 +29,12 @@
     </modules>
 
     <properties>
+        <!-- Development line MAJOR.MINOR-SNAPSHOT. Release tags vMAJOR.MINOR.PATCH must match it. -->
+        <revision>1.0-SNAPSHOT</revision>
+        <!-- Forked code under its own Apache LICENSE (FNT); don't apply the parent's Simonsoft header check. -->
+        <license.skip>true</license.skip>
         <compiler-plugin.version>3.13.0</compiler-plugin.version>
         <failsafe-plugin.version>${surefire-plugin.version}</failsafe-plugin.version>
-        <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.version>3.12.3</quarkus.version>
