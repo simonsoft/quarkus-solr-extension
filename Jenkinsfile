@@ -21,20 +21,15 @@
  *
  * Maven runs inside withMaven so Jenkins records consumed dependencies,
  * produced artifacts, fingerprints, and the Pipeline Maven dependency graph.
+ *
+ * withMaven gets the Jenkins tool installations (Manage Jenkins -> Tools), both
+ * installed automatically: 'maven-3.9' from Apache, 'jdk-21' from adoptium.net
+ * (Eclipse Temurin). It sets PATH and JAVA_HOME for each Maven run. A tools {}
+ * block is not enough: withMaven then uses the node's own Java.
  */
 
 pipeline {
     agent any
-
-    tools {
-        // Manage Jenkins -> Tools -> Maven installations: 'maven-3.9', installed
-        // automatically from Apache. Puts mvn on PATH, where withMaven finds it.
-        maven 'maven-3.9'
-        // Manage Jenkins -> Tools -> JDK installations: 'jdk-21', installed
-        // automatically from adoptium.net (Eclipse Temurin). Sets JAVA_HOME and PATH;
-        // the node's own Java is only a runtime for Jenkins itself.
-        jdk 'jdk-21'
-    }
 
     options {
         // A Multibranch child job publishes one stable Maven coordinate. Do not let
@@ -110,7 +105,7 @@ pipeline {
 
         stage('Verify') {
             steps {
-                withMaven(traceability: true) {
+                withMaven(maven: 'maven-3.9', jdk: 'jdk-21', traceability: true) {
                     sh 'mvn ${MAVEN_REVISION_ARG} clean verify'
                 }
             }
@@ -121,7 +116,7 @@ pipeline {
                 expression { env.BUILD_KIND != 'branch' }
             }
             steps {
-                withMaven(traceability: true) {
+                withMaven(maven: 'maven-3.9', jdk: 'jdk-21', traceability: true) {
                     // Verify has already run. Maven still executes the lifecycle needed
                     // for deploy, but tests are not run a second time.
                     sh 'mvn ${MAVEN_REVISION_ARG} -DskipTests deploy'
