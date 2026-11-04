@@ -30,6 +30,10 @@ pipeline {
         // Manage Jenkins -> Tools -> Maven installations: 'maven-3.9', installed
         // automatically from Apache. Puts mvn on PATH, where withMaven finds it.
         maven 'maven-3.9'
+        // Manage Jenkins -> Tools -> JDK installations: 'jdk-21', installed
+        // automatically from adoptium.net (Eclipse Temurin). Sets JAVA_HOME and PATH;
+        // the node's own Java is only a runtime for Jenkins itself.
+        jdk 'jdk-21'
     }
 
     options {
