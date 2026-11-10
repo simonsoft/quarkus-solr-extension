@@ -44,7 +44,7 @@ public interface SolrConnectionConfig {
     Boolean useHttp1_1();
 
     /**
-     * The request timeout in milliseconds for the http client. When <= 0, no timeout is used. Default is 0.
+     * The request timeout in milliseconds for the http client. When {@code <= 0}, no timeout is used. Default is 0.
      *
      * @return
      */
