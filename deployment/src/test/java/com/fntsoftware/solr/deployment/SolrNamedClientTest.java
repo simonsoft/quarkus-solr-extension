@@ -20,7 +20,8 @@ class SolrNamedClientTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new StringAsset("""
                             quarkus.solr.enabled=true
-                            quarkus.solr.devservices.enabled=false
+                            quarkus.solr.devservices.cores.repositem.config-path=not-used/repositem
+                            quarkus.solr.devservices.cores.reposxml.config-path=not-used/reposxml
                             quarkus.solr.clients.repositem.url=http://localhost:1/solr/repositem
                             quarkus.solr.clients.reposxml.url=http://localhost:1/solr/reposxml
                             """), "application.properties"));
@@ -34,7 +35,7 @@ class SolrNamedClientTest {
     Instance<SolrClient> reposxml;
 
     @Test
-    void shouldResolveNamedSolrClients() {
+    void shouldResolveNamedSolrClientsWithoutStartingDevService() {
         assertTrue(repositem.isResolvable());
         assertTrue(reposxml.isResolvable());
     }

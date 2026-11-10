@@ -20,6 +20,10 @@
             <artifactId>quarkus-smallrye-context-propagation-deployment</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices-deployment</artifactId>
+        </dependency>
+        <dependency>
             <groupId>se.simonsoft</groupId>
             <artifactId>quarkus-solr-extension</artifactId>
             <version>${project.version}</version>
@@ -29,20 +33,9 @@
             <artifactId>testcontainers</artifactId>
             <version>2.0.4</version>
         </dependency>
-        <!-- Keep docker-java aligned with Testcontainers 2.x; Quarkus 3.12 otherwise resolves an older Docker client. -->
-        <dependency>
-            <groupId>com.github.docker-java</groupId>
-            <artifactId>docker-java-api</artifactId>
-            <version>3.7.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.docker-java</groupId>
-            <artifactId>docker-java-transport-zerodep</artifactId>
-            <version>3.7.1</version>
-        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-internal</artifactId>
+            <artifactId>quarkus-junit-internal</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
