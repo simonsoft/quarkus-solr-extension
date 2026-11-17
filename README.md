@@ -4,6 +4,10 @@ Quarkus extension with a provider for
 the [Solrj](https://solr.apache.org/guide/solr/latest/deployment-guide/solrj.html) `SolrClient` and a devservice for the
 Solr container.
 
+Use Quarkus 3.39.2 for this extension and its consuming applications. It includes
+[the Dev Services configuration isolation fix](https://github.com/quarkusio/quarkus/pull/53794) for test profile changes.
+Generated Solr URLs use the standard `configProvider` API.
+
 ## Configuration
 
 The extension is opt-in. Enable it in `application.properties` when the application should inject Solr clients:
@@ -27,6 +31,9 @@ For multi-core Dev Services, configure one classpath config directory per core:
 quarkus.solr.devservices.cores.repositem.config-path=se/repos/indexing/solr/repositem
 quarkus.solr.devservices.cores.reposxml.config-path=se/simonsoft/cms/indexing/xml/solr/reposxml
 ```
+
+Solr waits for every core's ping endpoint before reporting ready. The startup timeout defaults to 60 seconds and
+can be configured with the standard `quarkus.devservices.timeout` property.
 
 Each configured core can then be injected as a named client:
 
@@ -69,6 +76,10 @@ quarkus.solr.clients.repositem.url=https://mydomain.fun/solr/repositem
 quarkus.solr.clients.reposxml.url=https://mydomain.fun/solr/reposxml
 ```
 
+URLs in `application.properties` take precedence over generated Dev Service URLs. If every configured core has an
+explicit URL, no Solr Dev Service starts. With a mix of external and local cores, the shared container starts and
+configured clients retain their external URLs.
+
 ## Usage
 
 The extension comes with a provider for a `SolrClient` bean, which is connected to the configured Solr
@@ -78,3 +89,13 @@ the [usage guide of SolrJ](https://solr.apache.org/guide/solr/latest/deployment-
 ## Contribute
 
 Fork, push changes to your fork, create PR to upstream (here) :)
+
+### Temporary test exclusion
+
+`SolrReadinessTest.waitsForBothCoresBeyondTheOldThirtySecondLimit` is temporarily disabled as of 2026-11-17.
+In PR #3 build #2, its 35-second HTTP-only wait was followed by a `Broken pipe` error when the next test
+created a Podman container. The suspected cause is reuse of a connection closed by Podman's idle timeout;
+see [Testcontainers issue #7310](https://github.com/testcontainers/testcontainers-java/issues/7310).
+This exclusion allows a comparison build without that pause; it does not establish that the connection issue is fixed.
+The short configured-timeout test and all container integration tests remain enabled. Re-enable the delayed-readiness
+test after the Podman connection issue is resolved and verify the complete suite on Jenkins.
