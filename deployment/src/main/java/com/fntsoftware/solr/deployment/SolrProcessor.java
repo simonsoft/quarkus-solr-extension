@@ -10,6 +10,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.Startable;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.runtime.LaunchMode;
 import jakarta.inject.Singleton;
 import org.apache.solr.client.solrj.SolrClient;
@@ -25,6 +26,7 @@ import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -34,6 +36,7 @@ import java.util.function.BooleanSupplier;
 
 class SolrProcessor {
     SolrDevserviceConfig config;
+    DevServicesConfig devServicesConfig;
 
     private static final String FEATURE = "solr";
     private static final String CLIENT_PREFIX = "quarkus.solr.clients.";
@@ -84,7 +87,8 @@ class SolrProcessor {
                 .feature(FEATURE)
                 .description("Solr Dev Service")
                 .serviceConfig(config)
-                .startable(() -> new SolrContainer(config.version(), Map.of(core, "solr")))
+                .startable(() -> new SolrContainer(config.version(), Map.of(core, "solr"),
+                        devServicesConfig.timeout().orElse(Duration.ofSeconds(60))))
                 .configProvider(Map.of("quarkus.solr.url", container -> solrCoreUrl(container, core)))
                 .build();
     }
@@ -103,7 +107,8 @@ class SolrProcessor {
                 .feature(FEATURE)
                 .description("Solr Dev Service")
                 .serviceConfig(config)
-                .startable(() -> new SolrContainer(config.version(), corePaths))
+                .startable(() -> new SolrContainer(config.version(), corePaths,
+                        devServicesConfig.timeout().orElse(Duration.ofSeconds(60))))
                 .configProvider(props)
                 .build();
     }
@@ -142,10 +147,12 @@ class SolrProcessor {
     private static class SolrContainer extends GenericContainer<SolrContainer> implements Startable {
         static final int PORT = 8983;
         private final Set<String> cores;
+        private final Duration startupTimeout;
 
-        public SolrContainer(String version, Map<String, String> corePaths) {
+        public SolrContainer(String version, Map<String, String> corePaths, Duration startupTimeout) {
             super(DockerImageName.parse("solr:" + version));
             this.cores = Set.copyOf(corePaths.keySet());
+            this.startupTimeout = startupTimeout;
             corePaths.forEach((core, path) -> withCopyFileToContainer(
                     MountableFile.forClasspathResource(path), "/tmp/quarkus-solr/" + core));
             // Solr's init hook copies the complete cores as the solr user, preserving writable ownership.
@@ -172,12 +179,12 @@ class SolrProcessor {
         protected void configure() {
             super.configure();
             addExposedPort(PORT);
-            waitingFor(waitForCores(cores));
+            waitingFor(waitForCores(cores, startupTimeout));
         }
     }
 
-    private static WaitStrategy waitForCores(Set<String> cores) {
-        WaitAllStrategy wait = new WaitAllStrategy();
+    static WaitStrategy waitForCores(Set<String> cores, Duration startupTimeout) {
+        WaitAllStrategy wait = new WaitAllStrategy().withStartupTimeout(startupTimeout);
         for (String core : cores) {
             wait.withStrategy(Wait.forHttp("/solr/" + core + "/admin/ping")
                     .forPort(SolrContainer.PORT)

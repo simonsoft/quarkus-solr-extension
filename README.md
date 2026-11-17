@@ -32,6 +32,9 @@ quarkus.solr.devservices.cores.repositem.config-path=se/repos/indexing/solr/repo
 quarkus.solr.devservices.cores.reposxml.config-path=se/simonsoft/cms/indexing/xml/solr/reposxml
 ```
 
+Solr waits for every core's ping endpoint before reporting ready. The startup timeout defaults to 60 seconds and
+can be configured with the standard `quarkus.devservices.timeout` property.
+
 Each configured core can then be injected as a named client:
 
 ```java
