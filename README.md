@@ -89,3 +89,13 @@ the [usage guide of SolrJ](https://solr.apache.org/guide/solr/latest/deployment-
 ## Contribute
 
 Fork, push changes to your fork, create PR to upstream (here) :)
+
+### Temporary test exclusion
+
+`SolrReadinessTest.waitsForBothCoresBeyondTheOldThirtySecondLimit` is temporarily disabled as of 2026-11-17.
+In PR #3 build #2, its 35-second HTTP-only wait was followed by a `Broken pipe` error when the next test
+created a Podman container. The suspected cause is reuse of a connection closed by Podman's idle timeout;
+see [Testcontainers issue #7310](https://github.com/testcontainers/testcontainers-java/issues/7310).
+This exclusion allows a comparison build without that pause; it does not establish that the connection issue is fixed.
+The short configured-timeout test and all container integration tests remain enabled. Re-enable the delayed-readiness
+test after the Podman connection issue is resolved and verify the complete suite on Jenkins.
