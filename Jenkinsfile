@@ -19,8 +19,10 @@
  *   <version>${revision}</version>
  *   <properties><revision>4.1-SNAPSHOT</revision></properties>
  *
- * Maven runs inside withMaven so Jenkins records consumed dependencies,
- * produced artifacts, fingerprints, and the Pipeline Maven dependency graph.
+ * Maven runs once per build, inside withMaven so Jenkins records consumed
+ * dependencies, produced artifacts, fingerprints, and the Pipeline Maven
+ * dependency graph. Deploying builds run 'clean deploy -DdeployAtEnd=true': every
+ * module is built and tested first, and nothing is uploaded unless all of them pass.
  *
  * withMaven gets the Jenkins tool installations (Manage Jenkins -> Tools), both
  * installed automatically: 'maven-3.9' from Apache, 'jdk-21' from adoptium.net
@@ -101,6 +103,9 @@ pipeline {
                     env.BUILD_VERSION = buildVersion
                     // Only PR and tag builds override the committed revision.
                     env.MAVEN_REVISION_ARG = (buildVersion == committedVersion) ? '' : "-Drevision=${buildVersion}"
+                    // One Maven run per build. deployAtEnd uploads only after every module
+                    // has passed, so a failing module publishes nothing.
+                    env.MAVEN_GOALS = (buildKind == 'branch') ? 'clean verify' : 'clean deploy -DdeployAtEnd=true'
                     currentBuild.displayName = "#${env.BUILD_NUMBER} ${buildVersion}"
 
                     echo "Build kind: ${buildKind}"
@@ -109,23 +114,10 @@ pipeline {
             }
         }
 
-        stage('Verify') {
+        stage('Build') {
             steps {
                 withMaven(maven: env.MAVEN_TOOL, jdk: env.JDK_TOOL, traceability: true) {
-                    sh 'mvn ${MAVEN_REVISION_ARG} clean verify'
-                }
-            }
-        }
-
-        stage('Deploy Maven artifacts') {
-            when {
-                expression { env.BUILD_KIND != 'branch' }
-            }
-            steps {
-                withMaven(maven: env.MAVEN_TOOL, jdk: env.JDK_TOOL, traceability: true) {
-                    // Verify has already run. Maven still executes the lifecycle needed
-                    // for deploy, but tests are not run a second time.
-                    sh 'mvn ${MAVEN_REVISION_ARG} -DskipTests deploy'
+                    sh 'mvn ${MAVEN_REVISION_ARG} ${MAVEN_GOALS}'
                 }
             }
         }
